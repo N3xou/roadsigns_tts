@@ -1,0 +1,32 @@
+# ============================================================
+# Road Sign Detector — Zależności
+# CUDA 13.0 — PyTorch nightly build
+# ============================================================
+
+# --- PyTorch z obsługą CUDA 13.0 ---
+# Zainstaluj ręcznie PRZED pozostałymi pakietami:
+#
+#   pip install torch torchvision torchaudio \
+#       --index-url https://download.pytorch.org/whl/nightly/cu130
+#
+# Minimalna wymagana wersja: torch>=2.8.0 (nightly z obsługą CUDA 13.0)
+
+# --- Etap 1 — Detekcja ---
+ultralytics>=8.0.0
+opencv-python-headless>=4.8.0
+Pillow>=10.0.0
+PyYAML>=6.0
+numpy>=1.24.0
+tensorflow-datasets
+tensorflow-io-gcs-filesystem
+
+# --- Etap 2 (OCR) — planowany ---
+# easyocr>=1.7.0
+# pytesseract>=0.3.10
+
+# --- Etap 3 (Klasyfikacja) — planowany ---
+# transformers>=4.35.0
+
+# --- Etap 4 (TTS) — planowany ---
+# pyttsx3>=2.90
+# gtts>=2.5.0

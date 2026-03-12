@@ -1,0 +1,53 @@
+# =============================================================
+# Road Sign Detector — Konfiguracja projektu
+# CUDA 13.0
+# =============================================================
+
+project:
+  name: "road_sign_detector"
+  version: "1.0.0"
+  description: "Detekcja znaków drogowych — klasa: Traffic sign"
+
+data:
+  # Ścieżka do katalogu z danymi pobranymi przez FiftyOne
+  # Struktura: <source_dir>/<split>/data/*.jpg
+  #            <source_dir>/<split>/labels/detections.csv
+  source_dir: "data"
+
+  train_split: 0.8
+  val_split:   0.1
+  test_split:  0.1
+
+  # Katalogi wyjściowe (generowane automatycznie przez --prepare)
+  data_dir:     "data"
+  images_dir:   "data/images"
+  labels_dir:   "data/labels"
+  dataset_yaml: "data/dataset.yaml"
+
+model:
+  architecture: "yolov8n"      # n / s / m / l / x
+  pretrained:   true
+  device:       "cpu"            # "0" = GPU 0 (CUDA), "cpu" = procesor
+  cuda_version: "13.0"
+  imgsz:        640
+  epochs:       5
+  batch:        16
+  patience:     10
+  workers:      8
+  amp:          false         # Automatic Mixed Precision FP16 — tylko GPU
+  conf_threshold: 0.25
+  iou_threshold:  0.45
+  output_dir:      "Data/runs"
+  model_save_path: "Data/runs/best_model.pt"
+
+inference:
+  conf:        0.25
+  iou:         0.45
+  save_results: true
+  show_labels:  true
+  show_conf:    true
+  line_width:   2
+
+logging:
+  level:    "INFO"
+  log_file: "data/runs/training.log"
