@@ -3,7 +3,7 @@ dataset.py
 Konwersja danych pobranych przez FiftyOne (Open Images v7) do formatu YOLO.
 
 Oczekiwana struktura wejściowa (fiftyone export):
-    data/
+    raw/
     ├── train/
     │   ├── data/               ← obrazy .jpg
     │   ├── labels/
@@ -382,20 +382,37 @@ class DatasetManager:
             )
 
     def _write_yaml(self) -> Path:
-        """Generuje dataset.yaml dla YOLOv8 z jedną klasą."""
+        """
+        Generuje dataset.yaml dla YOLOv8 z jedną klasą.
+
+        Struktura którą rozumie YOLOv8:
+            path:  <absolutna ścieżka do prepared/>
+            train: images/train
+            val:   images/val
+            test:  images/test
+
+        YOLOv8 automatycznie szuka etykiet w:
+            <path>/labels/train/  (podmienia 'images' → 'labels' w ścieżce)
+        Dlatego 'path' musi wskazywać na prepared/, NIE na prepared/images/.
+        """
         self.dataset_yaml.parent.mkdir(parents=True, exist_ok=True)
+
+        # data_dir to katalog nadrzędny images/ i labels/
+        # images_dir = prepared/images  →  data_dir = prepared/
+        data_dir = self.images_dir.parent.resolve()
+
         data = {
-            "path":  str(self.images_dir.resolve()),
-            "train": "train",
-            "val":   "val",
-            "test":  "test",
+            "path":  str(data_dir),
+            "train": "images/train",
+            "val":   "images/val",
+            "test":  "images/test",
             "nc":    1,
             "names": [CLASS_NAME],
         }
         with open(self.dataset_yaml, "w", encoding="utf-8") as f:
             yaml.dump(data, f, allow_unicode=True, default_flow_style=False)
         logger.info(
-            "dataset.yaml → %s  (nc=1, klasa: '%s')",
-            self.dataset_yaml, CLASS_NAME,
+            "dataset.yaml → %s  (path=%s, nc=1, klasa: '%s')",
+            self.dataset_yaml, data_dir, CLASS_NAME,
         )
         return self.dataset_yaml

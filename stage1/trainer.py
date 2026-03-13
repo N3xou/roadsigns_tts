@@ -6,7 +6,6 @@ Obsługa CUDA 13.0 z Automatic Mixed Precision (AMP/FP16).
 
 import json
 import logging
-import shutil
 import time
 from pathlib import Path
 from typing import Dict, Optional
@@ -80,18 +79,15 @@ class Trainer:
         elapsed = (time.time() - start) / 60
         logger.info("Trening zakończony w %.1f min.", elapsed)
 
-        # Odczytaj faktyczną ścieżkę zapisu bezpośrednio z obiektu wyników
+        # Odczytaj faktyczną ścieżkę bezpośrednio z wyników YOLOv8
         best_pt = self._find_best_pt(results, project_dir)
-        dest    = Path(self.model_cfg["model_save_path"]).resolve()
-        dest.parent.mkdir(parents=True, exist_ok=True)
 
         if best_pt and best_pt.exists():
-            shutil.copy2(best_pt, dest)
-            logger.info("Najlepszy model → %s", dest)
-            return dest
+            logger.info("Najlepszy model → %s", best_pt)
+            return best_pt
 
-        logger.warning("best.pt nie znaleziony, szukałem w: %s", best_pt)
-        return dest
+        logger.warning("best.pt nie znaleziony w: %s", project_dir)
+        return project_dir / "road_signs" / "weights" / "best.pt"
 
     @staticmethod
     def _find_best_pt(results, project_dir: Path) -> Optional[Path]:
@@ -133,7 +129,7 @@ class Trainer:
         """
         from ultralytics import YOLO
 
-        path   = model_path or self.model_cfg["model_save_path"]
+        path   = model_path or self.model_cfg.get("model_path") or self.model_cfg.get("model_save_path")
         device = self.model_cfg["device"]
         model  = YOLO(path)
 
@@ -155,7 +151,7 @@ class Trainer:
         for k, v in results.items():
             logger.info("  %-12s: %.4f", k, v)
 
-        out_path = Path(self.model_cfg["output_dir"]) / "metrics.json"
+        out_path = Path("logs") / "metrics.json"
         out_path.parent.mkdir(parents=True, exist_ok=True)
         out_path.write_text(json.dumps(results, indent=2))
         logger.info("Metryki zapisane: %s", out_path)

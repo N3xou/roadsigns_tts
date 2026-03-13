@@ -1,6 +1,6 @@
 # Road Sign Detector — Etap 1
 
-Detekcja znaków drogowych klasy **Traffic sign** przy użyciu YOLOv8 i danych z Open Images v7.
+Detekcja znaków drogowych (**Traffic sign**) przy użyciu YOLOv8 i danych Open Images v7.
 
 ---
 
@@ -8,200 +8,108 @@ Detekcja znaków drogowych klasy **Traffic sign** przy użyciu YOLOv8 i danych z
 
 ```
 road_sign_detector/
-├── run_stage1.py              ← punkt wejścia (CLI)
+├── run_stage1.py              ← punkt wejścia CLI
+├── downloader.py              ← pobieranie danych przez FiftyOne
 ├── requirements.txt
 ├── README.md
+│
 ├── config/
-│   └── settings.yaml          ← konfiguracja projektu
-├── runs/
-│   └── detect/
-│   │   │   ├── runs/  
-│   │   │   │   ├── weights/ ← args.yaml...box currves..train batch..val batch..results.csv  confusion matrix etc.
-│   │   │   └── val/ ←...box currves..train batch..val batch..results.csv etc. confusion matrix etc.
-├── data/                      ← generowane automatycznie przez --prepare
-│   ├── images/
-│   │   ├── raw/               ← wszystkie obrazy po konwersji
+│   └── settings.yaml          ← cała konfiguracja projektu
+│
+├── data/
+│   ├── raw/                  ← dane źródłowe FiftyOne (tworzone przez downloader.py)
 │   │   ├── train/
-│   │   ├── val/
-│   │   └── test/
-│   ├── labels/
-│   │   ├── raw/               ← etykiety YOLO (.txt)
-│   │   ├── train/
-│   │   ├── val/
-│   │   └── test/
-│   ├── dataset.yaml           ← konfiguracja datasetu dla YOLOv8
-│   ├──runs/                  ← wyniki treningów i detekcji
-│   │   ├── detections/detections.json
-│   │   ├── road_signs/ 
-│   │   │  ├──best_model.pt 
-│   │   │  ├──metrics.json 
-│   │   │  ├──training.log
-│   ├── train/          ← obrazy .jpg
-│   └──  val/          ← obrazy .jpg
+│   │   │   ├── data/              ← obrazy .jpg
+│   │   │   ├── labels/
+│   │   │   │   └── detections.csv
+│   │   │   └── metadata/
+│   │   └── validation/
+│   │       ├── data/
+│   │       ├── labels/
+│   │       │   └── detections.csv
+│   │       └── metadata/
+│   │
+│   ├── prepared/             ← dane YOLO (tworzone przez --prepare)
+│   │   ├── images/
+│   │   │   ├── raw/               ← wszystkie obrazy po konwersji
+│   │   │   ├── train/
+│   │   │   ├── val/
+│   │   │   └── test/
+│   │   ├── labels/
+│   │   │   ├── raw/               ← etykiety YOLO (.txt)
+│   │   │   ├── train/
+│   │   │   ├── val/
+│   │   │   └── test/
+│   │   └── dataset.yaml
+│
+├── runs/                      ← generowane automatycznie przez YOLOv8
+│   └── road_signs/
+│       ├── weights/
+│       │   ├── best.pt        ← najlepszy model
+│       │   └── last.pt
+│       ├── results.csv
+│       ├── confusion_matrix.png
+│       └── ...
+│
+├── logs/
+│   ├── training.log
+│   ├── metrics.json           ← wyniki walidacji (mAP, precision, recall)
+│   └── detections/
+│       ├── detections.json
+│       └── det_*.jpg
+│
 └── stage1/
-    ├── config.py
-    ├── dataset.py             ← konwersja FiftyOne → YOLO
-    ├── trainer.py
-    └── detector.py
+    ├── config.py              ← ładowanie konfiguracji, CUDA, logging
+    ├── dataset.py             ← konwersja raw/ → prepared/
+    ├── trainer.py             ← trening i walidacja YOLOv8
+    └── detector.py            ← inferencja, eksport JSON
 ```
 
 ---
 
-## Pobieranie danych (FiftyOne)
+## Szybki start
 
-Dane należy pobrać **ręcznie przed uruchomieniem projektu** przy użyciu biblioteki FiftyOne.
-
-### Instalacja FiftyOne
+### 1. Instalacja zależności
 
 ```bash
-pip install fiftyone
-```
-
-### Skrypt pobierający dane
-
-```python
-import fiftyone.zoo as foz
-
-# Walidacja — mały zestaw do testów
-dataset = foz.load_zoo_dataset(
-    "open-images-v7",
-    split="validation",
-    label_types=["detections"],
-    classes=["Traffic sign"],
-    max_samples=15,        # zwiększ do 500+ dla treningu produkcyjnego
-)
-
-# Train — większy zestaw do treningu
-dataset_train = foz.load_zoo_dataset(
-    "open-images-v7",
-    split="train",
-    label_types=["detections"],
-    classes=["Traffic sign"],
-    max_samples=500,
-)
-```
-
-### Eksport do struktury Open Images
-
-Po pobraniu FiftyOne przechowuje dane we własnym formacie — należy je wyeksportować:
-
-```python
-import fiftyone as fo
-import fiftyone.zoo as foz
-from pathlib import Path
-
-for split in ["train", "validation"]:
-    dataset = foz.load_zoo_dataset(
-        "open-images-v7",
-        split=split,
-        label_types=["detections"],
-        classes=["Traffic sign"],
-        max_samples=500,
-    )
-    export_dir = str(Path("Data") / split)
-    dataset.export(
-        export_dir=export_dir,
-        dataset_type=fo.types.OpenImagesV7Dataset,
-        label_field="detections",
-        classes=["Traffic sign"],
-    )
-    print(f"Wyeksportowano {split} → {export_dir}")
-```
-
-### Wynikowa struktura katalogów
-
-```
-Data/
-├── train/
-│   ├── data/               ← obrazy .jpg (nazwy = ImageID)
-│   ├── labels/
-│   │   └── detections.csv  ← adnotacje bbox w formacie Open Images
-│   └── metadata/
-│       ├── classes.csv
-│       ├── hierarchy.json
-│       └── image_ids.csv
-└── validation/
-    └── ...                 ← ta sama struktura
-```
-
-### Format detections.csv
-
-```
-ImageID,Source,LabelName,Confidence,XMin,XMax,YMin,YMax,IsOccluded,...
-abc123,fiftyone,Traffic sign,1.0,0.123,0.456,0.234,0.567,0,...
-```
-
-Współrzędne `XMin`, `XMax`, `YMin`, `YMax` są **znormalizowane** do `[0, 1]`.
-Kod automatycznie konwertuje je do formatu YOLO (`cx cy w h`).
-
----
-
-## Konfiguracja
-
-Edytuj `config/settings.yaml` — najważniejszy parametr to ścieżka do danych:
-
-```yaml
-data:
-  source_dir: "Data"   # ścieżka względna lub bezwzględna do katalogu z danymi FiftyOne
-```
-
-Dla ścieżki bezwzględnej (Windows):
-
-```yaml
-data:
-  source_dir: "C:/Users/Yami/PycharmProjects/roadsign_detector_tts/Data"
-```
-
----
-
-## Instalacja zależności
-
-```bash
-# Krok 1 — PyTorch z obsługą CUDA 13.0
+# PyTorch z CUDA 13.0 (GPU)
 pip install torch torchvision torchaudio \
     --index-url https://download.pytorch.org/whl/nightly/cu130
 
-# Krok 2 — pozostałe pakiety
+# Na CPU (bez GPU)
+pip install torch torchvision torchaudio
+
+# Pozostałe pakiety
 pip install -r requirements.txt
 ```
 
----
-
-## Użycie
-
-### 1. Sprawdź środowisko
+### 2. Pobierz dane
 
 ```bash
-python run_stage1.py --check
+python downloader.py
 ```
 
-Wyświetla wersje PyTorch / CUDA, dostępne GPU oraz czy `Data/` ma poprawną strukturę.
+Zapisuje dane do `raw/train/` i `raw/validation/`.
 
-### 2. Konwertuj dane FiftyOne → YOLO
+### 3. Konwertuj dane → format YOLO
 
 ```bash
 python run_stage1.py --prepare
 ```
 
-Jeśli dane są w niestandardowej lokalizacji:
+Czyta `raw/`, tworzy `prepared/` z podziałem train/val/test.
+
+### 4. Trenuj model
 
 ```bash
-python run_stage1.py --prepare --source "C:/Users/Yami/PycharmProjects/roadsign_detector_tts/Data"
-```
-
-Tworzy `data/images/`, `data/labels/` z podziałem `train/val/test` oraz `data/dataset.yaml`.
-
-### 3. Trenuj model
-
-```bash
+# GPU (domyślnie)
 python run_stage1.py --train
+
+# CPU
+python run_stage1.py --train --device cpu
 ```
 
-### 4. Pełny pipeline
-
-```bash
-python run_stage1.py --prepare --train
-```
+Model zapisywany do `runs/road_signs/weights/best.pt`.
 
 ### 5. Walidacja
 
@@ -209,45 +117,73 @@ python run_stage1.py --prepare --train
 python run_stage1.py --validate
 ```
 
-### 6. Detekcja na własnych obrazach
+Wyniki zapisywane do `logs/metrics.json`.
+
+### 6. Detekcja
 
 ```bash
 python run_stage1.py --detect --input zdjecie.jpg
-python run_stage1.py --detect --input katalog/ --output wyniki/
+python run_stage1.py --detect --input katalog/
+```
+
+Wyniki zapisywane do `logs/detections/`.
+
+---
+
+## Wszystkie opcje CLI
+
+| Flaga | Opis |
+|-------|------|
+| `--check` | Sprawdź zależności i środowisko CUDA |
+| `--prepare` | Konwertuj `raw/` → `prepared/` |
+| `--train` | Trenuj model YOLOv8 |
+| `--validate` | Waliduj wytrenowany model |
+| `--detect` | Detekcja na obrazie lub katalogu |
+| `--source KATALOG` | Nadpisz `source_dir` z settings.yaml |
+| `--device DEVICE` | `cpu`, `0` (GPU 0), `0,1` (multi-GPU) |
+| `--input SCIEZKA` | Wejście dla `--detect` |
+| `--output KATALOG` | Wyjście dla `--detect` |
+
+---
+
+## Konfiguracja (settings.yaml)
+
+```yaml
+data:
+  source_dir: "raw"          # dane FiftyOne
+  data_dir:   "prepared"     # dane YOLO
+
+model:
+  architecture: "yolov8n"         # n=szybki / s / m / l / x=dokładny
+  device: "0"                     # "0" = GPU, "cpu" = procesor
+  epochs: 50
+  amp: true                       # FP16 — tylko GPU
 ```
 
 ---
 
-## Architektura modelu
-
-| Parametr | Wartość domyślna | Opis |
-|----------|------------------|------|
-| Model    | `yolov8n`        | YOLOv8 Nano (szybki, lekki) |
-| Epoki    | `50`             | Liczba epok treningu |
-| Batch    | `16`             | Auto-dostosowywany do VRAM |
-| imgsz    | `640`            | Rozmiar obrazu wejściowego |
-| AMP      | `true`           | FP16 Mixed Precision (tylko GPU) |
-| Klasa    | `Traffic sign`   | Jedna klasa, indeks YOLO = 0 |
-
----
-
-## Przepływ danych między etapami
+## Przepływ danych
 
 ```
-[FiftyOne — Open Images v7]
-       ↓  Data/<split>/data/*.jpg
-       ↓  Data/<split>/labels/detections.csv
+downloader.py
+    ↓  raw/train/data/*.jpg
+    ↓  raw/train/labels/detections.csv
 
-[--prepare — dataset.py]   filtracja + konwersja bbox → YOLO
-       ↓  data/images/{train,val,test}/*.jpg
-       ↓  data/labels/{train,val,test}/*.txt  (format: "0 cx cy w h")
-       ↓  data/dataset.yaml
+--prepare  (dataset.py)
+    ↓  prepared/images/{train,val,test}/*.jpg
+    ↓  prepared/labels/{train,val,test}/*.txt
+    ↓  prepared/dataset.yaml
 
-[--train — YOLOv8]
-       ↓  data/runs/best_model.pt
+--train  (trainer.py)
+    ↓  runs/road_signs/weights/best.pt
+    ↓  logs/training.log
 
-[--detect — detector.py]
-       ↓  detections.json  {image_id, bbox, confidence, crop}
+--validate
+    ↓  logs/metrics.json
+
+--detect  (detector.py)
+    ↓  logs/detections/detections.json
+    ↓  logs/detections/det_*.jpg
 
 [Etap 2 — OCR]          planowany
 [Etap 3 — Klasyfikacja] planowany

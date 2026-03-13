@@ -57,7 +57,7 @@ class Detector:
         self.config     = config
         self.model_cfg  = config["model"]
         self.inf_cfg    = config["inference"]
-        self.model_path = model_path or self.model_cfg.get("model_save_path")
+        self.model_path = model_path or self.model_cfg.get("model_path")
         self.model      = None
         self.class_names: List[str] = []
 

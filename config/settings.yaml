@@ -1,48 +1,40 @@
 # =============================================================
-# Road Sign Detector — Konfiguracja projektu
-# CUDA 13.0
+# Road Sign Detector — Konfiguracja
 # =============================================================
 
 project:
   name: "road_sign_detector"
   version: "1.0.0"
-  description: "Detekcja znaków drogowych — klasa: Traffic sign"
 
 data:
-  # Ścieżka do katalogu z danymi pobranymi przez FiftyOne
-  # Struktura: <source_dir>/<split>/data/*.jpg
-  #            <source_dir>/<split>/labels/detections.csv
-  source_dir: "data"
-
-  train_split: 0.8
-  val_split:   0.1
-  test_split:  0.1
-
-  # Katalogi wyjściowe (generowane automatycznie przez --prepare)
-  data_dir:     "data"
-  images_dir:   "data/images"
-  labels_dir:   "data/labels"
-  dataset_yaml: "data/dataset.yaml"
+  source_dir:   "data/raw"              # dane FiftyOne: raw/train/, raw/validation/
+  data_dir:     "data/prepared"         # dane YOLO (generowane przez --prepare)
+  images_dir:   "data/prepared/images"
+  labels_dir:   "data/prepared/labels"
+  dataset_yaml: "data/prepared/dataset.yaml"
+  train_split:  0.8
+  val_split:    0.1
+  test_split:   0.1
 
 model:
-  architecture: "yolov8n"      # n / s / m / l / x
-  pretrained:   true
-  device:       "cpu"            # "0" = GPU 0 (CUDA), "cpu" = procesor
-  cuda_version: "13.0"
-  imgsz:        640
-  epochs:       5
-  batch:        16
-  patience:     10
-  workers:      8
-  amp:          false         # Automatic Mixed Precision FP16 — tylko GPU
+  architecture:   "yolov8n"             # n / s / m / l / x
+  pretrained:     true
+  device:         "0"                   # "0" = GPU, "cpu" = procesor
+  cuda_version:   "13.0"
+  imgsz:          640
+  epochs:         50
+  batch:          16                    # auto-dostosowywany do VRAM
+  patience:       10
+  workers:        8
+  amp:            true                  # FP16 — tylko GPU, auto-wyłączane na cpu
   conf_threshold: 0.25
   iou_threshold:  0.45
-  output_dir:      "Data/runs"
-  model_save_path: "Data/runs/best_model.pt"
+  output_dir:     "runs"                # YOLOv8 zapisuje tu swoje wyniki
+  model_path:     "runs/road_signs/weights/best.pt"   # tylko do inferencji
 
 inference:
-  conf:        0.25
-  iou:         0.45
+  conf:         0.25
+  iou:          0.45
   save_results: true
   show_labels:  true
   show_conf:    true
@@ -50,4 +42,4 @@ inference:
 
 logging:
   level:    "INFO"
-  log_file: "data/runs/training.log"
+  log_file: "logs/training.log"

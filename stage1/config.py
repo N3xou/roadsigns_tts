@@ -161,19 +161,22 @@ def _recommended_batch(vram_gb: float, imgsz: int) -> int:
 
 def ensure_directories(config: Dict[str, Any]) -> None:
     """Tworzy wymagane katalogi projektu."""
+    data    = config["data"]
+    img_dir = Path(data["images_dir"])
+    lbl_dir = Path(data["labels_dir"])
+
     dirs = [
-        config["data"]["data_dir"],
-        config["data"]["images_dir"],
-        config["data"]["labels_dir"],
-        config["model"]["output_dir"],
-        "data/images/raw",
-        "data/images/train",
-        "data/images/val",
-        "data/images/test",
-        "data/labels/raw",
-        "data/labels/train",
-        "data/labels/val",
-        "data/labels/test",
+        Path(data["data_dir"]),
+        Path(data["images_dir"]),
+        Path(data["labels_dir"]),
+        Path(config["model"]["output_dir"]),
+        Path("logs"),
+    ] + [
+        img_dir / sub for sub in ("raw", "train", "val", "test")
+    ] + [
+        lbl_dir / sub for sub in ("raw", "train", "val", "test")
     ]
+    # raw/ jest tworzone przez downloader.py — nie tworzymy go tutaj
+
     for d in dirs:
-        Path(d).mkdir(parents=True, exist_ok=True)
+        d.mkdir(parents=True, exist_ok=True)
