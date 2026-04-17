@@ -9,7 +9,7 @@ import logging
 import time
 from pathlib import Path
 from typing import Dict, Optional
-
+from ultralytics import YOLO
 logger = logging.getLogger("road_sign_detector.trainer")
 
 
@@ -38,7 +38,6 @@ class Trainer:
         Returns:
             Ścieżka do najlepszego modelu (best.pt)
         """
-        from ultralytics import YOLO
 
         yaml_path  = dataset_yaml or self.data_cfg["dataset_yaml"]
         arch       = self.model_cfg["architecture"]
