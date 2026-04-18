@@ -84,6 +84,11 @@ def check_cuda(config: Dict[str, Any]) -> Dict[str, Any]:
         logger.error("PyTorch nie jest zainstalowany. Zainstaluj zgodnie z README.")
         sys.exit(1)
 
+    if config["model"].get("device") == "cpu":
+        config["model"]["amp"] = False
+        logger.info("Tryb CPU wymuszony — pomijam sprawdzanie CUDA.")
+        return config
+
     if not torch.cuda.is_available():
         logger.warning("CUDA niedostępna — przełączam na CPU.")
         config["model"]["device"] = "cpu"

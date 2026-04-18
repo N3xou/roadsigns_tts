@@ -7,11 +7,11 @@ project:
   version: "1.0.0"
 
 data:
-  source_dir:   "data/raw"              # dane FiftyOne: raw/train/, raw/validation/
-  data_dir:     "data/prepared"         # dane YOLO (generowane przez --prepare)
-  images_dir:   "data/prepared/images"
-  labels_dir:   "data/prepared/labels"
-  dataset_yaml: "data/prepared/dataset.yaml"
+  source_dir:   "raw"              # dane FiftyOne: raw/train/, raw/validation/
+  data_dir:     "prepared"         # dane YOLO (generowane przez --prepare)
+  images_dir:   "prepared/images"
+  labels_dir:   "prepared/labels"
+  dataset_yaml: "prepared/dataset.yaml"
   train_split:  0.8
   val_split:    0.1
   test_split:   0.1
@@ -19,7 +19,7 @@ data:
 model:
   architecture:   "yolov8n"             # n / s / m / l / x
   pretrained:     true
-  device:         "0"                   # "0" = GPU, "cpu" = procesor
+  device:         "cpu"                 # "0" = GPU, "cpu" = procesor
   cuda_version:   "13.0"
   imgsz:          640
   epochs:         50
