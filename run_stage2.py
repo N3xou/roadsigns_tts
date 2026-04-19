@@ -11,7 +11,6 @@ Użycie:
   python run_stage2.py --input katalog/ --output logs/ocr
   python run_stage2.py --input zdjecie.jpg --cpu
 """
-
 import argparse
 import json
 import logging

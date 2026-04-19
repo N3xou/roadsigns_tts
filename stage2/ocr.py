@@ -16,8 +16,8 @@ logger = logging.getLogger("road_sign_detector.ocr")
 # Próg confidence EasyOCR — wyniki poniżej są ignorowane
 _CONF_THRESHOLD = 0.4
 
-# Znaki drogowe mają krótki tekst; wszystko dłuższe to szum
-_MAX_TEXT_LENGTH = 40
+# Znaki drogowe mają krótki tekst; wszystko dłuższe to szum (
+_MAX_TEXT_LENGTH = 100
 
 
 def _preprocess(crop: np.ndarray) -> np.ndarray:
